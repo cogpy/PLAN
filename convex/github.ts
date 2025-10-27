@@ -52,6 +52,21 @@ export const getOrgRepositories = action({
 
         if (!response.ok) {
           const error = await response.text();
+          
+          // Handle rate limiting specifically
+          if (response.status === 403) {
+            const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
+            const rateLimitReset = response.headers.get("X-RateLimit-Reset");
+            
+            if (rateLimitRemaining === "0" && rateLimitReset) {
+              const resetDate = new Date(parseInt(rateLimitReset) * 1000);
+              throw new Error(
+                `GitHub API rate limit exceeded. Resets at ${resetDate.toLocaleTimeString()}. ` +
+                `Consider setting a GITHUB_TOKEN for higher rate limits.`
+              );
+            }
+          }
+          
           throw new Error(
             `GitHub API error (${response.status}): ${error}`
           );
@@ -71,7 +86,7 @@ export const getOrgRepositories = action({
             language: repo.language || "",
             stars: repo.stargazers_count || 0,
             forks: repo.forks_count || 0,
-            visibility: repo.visibility
+            visibility: repo.visibility && typeof repo.visibility === "string"
               ? repo.visibility.charAt(0).toUpperCase() + repo.visibility.slice(1)
               : "Public",
             description: repo.description || undefined,
