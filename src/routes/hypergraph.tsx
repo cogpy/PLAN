@@ -165,12 +165,9 @@ function Hypergraph() {
   );
 }
 
-function HypergraphVisualization({ repositories }: { repositories: Repository[] }) {
-  const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
-  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-  
-  // Group repositories by language
-  const languageGroups = repositories.reduce((acc: Record<string, Repository[]>, repo: Repository) => {
+// Utility function to group repositories by language
+function groupRepositoriesByLanguage(repositories: Repository[]): Record<string, Repository[]> {
+  return repositories.reduce((acc: Record<string, Repository[]>, repo: Repository) => {
     const lang = repo.language || "Other";
     if (!acc[lang]) {
       acc[lang] = [];
@@ -178,6 +175,14 @@ function HypergraphVisualization({ repositories }: { repositories: Repository[] 
     acc[lang].push(repo);
     return acc;
   }, {} as Record<string, Repository[]>);
+}
+
+function HypergraphVisualization({ repositories }: { repositories: Repository[] }) {
+  const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  
+  // Group repositories by language
+  const languageGroups = useMemo(() => groupRepositoriesByLanguage(repositories), [repositories]);
 
   const languages = Object.keys(languageGroups).sort();
   
@@ -234,7 +239,7 @@ function HypergraphVisualization({ repositories }: { repositories: Repository[] 
       </div>
       
       {viewMode === "graph" ? (
-        <GraphView repositories={filteredRepos} languageGroups={languageGroups} />
+        <GraphView repositories={filteredRepos} />
       ) : (
         <ListView repositories={filteredRepos} />
       )}
@@ -242,7 +247,8 @@ function HypergraphVisualization({ repositories }: { repositories: Repository[] 
   );
 }
 
-function GraphView({ repositories, languageGroups }: { repositories: Repository[], languageGroups: Record<string, Repository[]> }) {
+function GraphView({ repositories }: { repositories: Repository[] }) {
+  const languageGroups = useMemo(() => groupRepositoriesByLanguage(repositories), [repositories]);
   const languages = Object.keys(languageGroups).sort();
   
   return (
@@ -296,14 +302,7 @@ function NetworkGraph({ repositories }: { repositories: Repository[] }) {
   const centerY = height / 2;
   
   // Group by language for positioning
-  const languageGroups = repositories.reduce((acc: Record<string, Repository[]>, repo: Repository) => {
-    const lang = repo.language || "Other";
-    if (!acc[lang]) {
-      acc[lang] = [];
-    }
-    acc[lang].push(repo);
-    return acc;
-  }, {} as Record<string, Repository[]>);
+  const languageGroups = useMemo(() => groupRepositoriesByLanguage(repositories), [repositories]);
   
   const languages = Object.keys(languageGroups);
   const langCount = languages.length;
@@ -383,7 +382,7 @@ function NetworkGraph({ repositories }: { repositories: Repository[] }) {
               <circle
                 cx={node.x}
                 cy={node.y}
-                r={Math.max(5, Math.min(node.repo.forks / 500, 15))}
+                r={Math.max(5, Math.min(3 + Math.sqrt(node.repo.forks / 100), 15))}
                 fill={languageColors[node.language] || languageColors["Other"]}
                 opacity="0.8"
                 className="hover:opacity-100 transition-opacity cursor-pointer"
