@@ -63,6 +63,15 @@ This repository contains comprehensive documentation for the cogpy GitHub organi
 - [5-Repo Bridge Set](./docs/agi-os/05-bridge-set-integration.md) - Critical integration paths
 - [Visual Dependency Graph](./docs/agi-os/06-dependency-graph.md) - Complete system architecture
 - [Getting Started Guide](./docs/agi-os/09-getting-started.md) - Development setup
+- [HyperGraphiQL System](./docs/HYPERGRAPHIQL.md) - Interactive repository visualization
+
+## HyperGraphiQL
+
+The HyperGraphiQL system provides an interactive visualization of all cogpy organization repositories. It dynamically fetches repository data from GitHub and displays it in multiple views.
+
+🔍 **[View HyperGraphiQL Documentation](./docs/HYPERGRAPHIQL.md)**
+
+Access the visualization at `/hypergraph` in the running application.
 
 ## Getting Started
 
