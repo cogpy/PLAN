@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as HypergraphImport } from './routes/hypergraph'
 import { Route as AppImport } from './routes/_app'
 import { Route as IndexImport } from './routes/index'
 import { Route as AppAuthImport } from './routes/_app/_auth'
@@ -34,6 +35,11 @@ const AppAuthOnboardingImport = createFileRoute('/_app/_auth/onboarding')()
 const AppAuthDashboardImport = createFileRoute('/_app/_auth/dashboard')()
 
 // Create/Update Routes
+
+const HypergraphRoute = HypergraphImport.update({
+  path: '/hypergraph',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AppRoute = AppImport.update({
   id: '/_app',
@@ -137,6 +143,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof AppImport
+      parentRoute: typeof rootRoute
+    }
+    '/hypergraph': {
+      id: '/hypergraph'
+      path: '/hypergraph'
+      fullPath: '/hypergraph'
+      preLoaderRoute: typeof HypergraphImport
       parentRoute: typeof rootRoute
     }
     '/_app/_auth': {
@@ -269,6 +282,7 @@ export const routeTree = rootRoute.addChildren({
       }),
     }),
   }),
+  HypergraphRoute,
 })
 
 /* prettier-ignore-end */
@@ -280,7 +294,8 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_app"
+        "/_app",
+        "/hypergraph"
       ]
     },
     "/": {
@@ -292,6 +307,9 @@ export const routeTree = rootRoute.addChildren({
         "/_app/_auth",
         "/_app/login"
       ]
+    },
+    "/hypergraph": {
+      "filePath": "hypergraph.tsx"
     },
     "/_app/_auth": {
       "filePath": "_app/_auth.tsx",
