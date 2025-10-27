@@ -23,13 +23,21 @@ The HyperGraphiQL system is an interactive visualization tool for exploring all 
 For better rate limits and access to private repositories, configure a GitHub Personal Access Token:
 
 1. **Create a GitHub Personal Access Token**:
-   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Click "Generate new token (classic)"
-   - Give it a descriptive name (e.g., "PLAN HyperGraphiQL")
-   - Select scopes:
-     - `repo` (for private repositories)
-     - `read:org` (for organization data)
-   - Click "Generate token" and copy the token
+   - Go to GitHub Settings → Developer settings → Personal access tokens
+   - **Recommended**: Use "Fine-grained tokens" for better security
+     - Click "Generate new token" under Fine-grained tokens
+     - Give it a descriptive name (e.g., "PLAN HyperGraphiQL")
+     - Select "Resource owner" as your organization (cogpy)
+     - Set "Repository access" to "All repositories" or select specific ones
+     - Under "Permissions", set:
+       - Repository permissions → Contents: Read
+       - Repository permissions → Metadata: Read
+     - Click "Generate token" and copy the token
+   - **Alternative**: Use "Tokens (classic)" (legacy)
+     - Click "Generate new token (classic)"
+     - Give it a descriptive name
+     - Select scopes: `repo` (for private repositories) and `read:org` (for organization data)
+     - Click "Generate token" and copy the token
 
 2. **Set the token in your environment**:
    
@@ -46,12 +54,15 @@ For better rate limits and access to private repositories, configure a GitHub Pe
 ### Rate Limits
 
 Without authentication:
-- 60 requests per hour per IP
+- 60 requests per hour per IP address
 
-With authentication:
+With authentication (Personal Access Token - Classic):
 - 5,000 requests per hour
 
-The HyperGraphiQL system uses pagination and typically makes 1-2 requests to fetch all repositories.
+With fine-grained tokens:
+- Typically 5,000 requests per hour (may vary based on token permissions and repository owner's plan)
+
+The HyperGraphiQL system uses pagination and typically makes 1-2 requests to fetch all repositories (fewer than 200 repos) or up to 20 requests for very large organizations.
 
 ## Usage
 
@@ -78,7 +89,11 @@ The system provides two integration methods:
 Run the Deno tests to verify the system can fetch all repositories:
 
 ```bash
+# With all permissions (quick for development)
 deno test -A hypergraph_test.ts
+
+# With specific permissions (recommended for production)
+deno test --allow-net --allow-env hypergraph_test.ts
 ```
 
 The test suite verifies:
@@ -134,8 +149,8 @@ Private repositories require authentication:
 
 The initial fetch may take 5-10 seconds for organizations with many repositories:
 - This is normal for 100+ repositories
-- Data is cached after the first load
-- Consider implementing server-side caching for production
+- Data is refetched on each page load (no persistent caching)
+- Consider implementing server-side caching with Convex tables for production to improve performance
 
 ## Contributing
 
