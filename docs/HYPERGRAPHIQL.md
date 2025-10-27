@@ -1,5 +1,24 @@
 # HyperGraphiQL System
 
+## Quick Start
+
+To deploy and test the HyperGraphiQL interface:
+
+1. **Verify Deployment**: The interface is deployed automatically via Netlify on push to main
+2. **Access the Interface**: Navigate to `/hypergraph` in your deployed application
+3. **Run Tests**: Tests run automatically in GitHub Actions, or run locally with:
+   ```bash
+   # Recommended: Pass token inline (more secure)
+   GITHUB_TOKEN=your_token_here deno test -A hypergraph_test.ts
+   
+   # Alternative: Set in environment (saved in shell history)
+   export GITHUB_TOKEN=your_token_here
+   deno test -A hypergraph_test.ts
+   
+   # Without token (uses public API, 60 req/hr limit)
+   deno test -A hypergraph_test.ts
+   ```
+
 ## Overview
 
 The HyperGraphiQL system is an interactive visualization tool for exploring all repositories in the cogpy GitHub organization. It dynamically fetches repository data from the GitHub API and presents it in multiple views:
@@ -70,6 +89,29 @@ The HyperGraphiQL system uses pagination and typically makes 1-2 requests to fet
 
 Navigate to `/hypergraph` in the application to view the visualization.
 
+### Deployment
+
+The HyperGraphiQL interface is deployed automatically with the main application:
+
+1. **Netlify Deployment** (Automatic):
+   - Configured in `netlify.toml` (see `[context.production]` section)
+   - Deploys automatically on push to main branch
+   - Production build command: `npx convex deploy --cmd 'npm run build'`
+   - The `/hypergraph` route is accessible after deployment
+
+2. **Local Development**:
+   ```bash
+   npm install
+   npm run dev
+   ```
+   Then visit `http://localhost:5173/hypergraph`
+
+3. **Manual Build**:
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
 ### API Integration
 
 The system provides two integration methods:
@@ -86,15 +128,40 @@ The system provides two integration methods:
 
 ## Testing
 
-Run the Deno tests to verify the system can fetch all repositories:
+The HyperGraphiQL system includes comprehensive Deno tests that verify GitHub API integration and repository fetching.
+
+### Running Tests Locally
+
+To run tests with authentication (recommended for full functionality):
 
 ```bash
-# With all permissions (quick for development)
+# Option 1: Pass token inline (recommended, more secure)
+GITHUB_TOKEN=your_github_token_here deno test -A hypergraph_test.ts
+
+# Option 2: Using environment variable (saved in shell history)
+export GITHUB_TOKEN=your_github_token_here
+deno test -A hypergraph_test.ts
+
+# Option 3: Using .env file (create .env with GITHUB_TOKEN=...)
+# For bash/zsh: set -a; source .env; set +a
+# For fish: export (cat .env)
+# Or use direnv for automatic loading
 deno test -A hypergraph_test.ts
 
 # With specific permissions (recommended for production)
-deno test --allow-net --allow-env hypergraph_test.ts
+GITHUB_TOKEN=your_token deno test --allow-net --allow-env hypergraph_test.ts
 ```
+
+To run tests without authentication (limited by rate limits):
+
+```bash
+# Tests will use public API (60 requests/hour)
+deno test -A hypergraph_test.ts
+```
+
+### CI/CD Testing
+
+Tests run automatically in GitHub Actions on every push and pull request. The workflow is configured in `.github/workflows/deno.yml` and automatically uses GitHub's built-in authentication token, so no manual configuration is needed.
 
 The test suite verifies:
 - ✅ Successful fetching of cogpy organization repositories
