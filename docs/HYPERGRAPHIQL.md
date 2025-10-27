@@ -8,14 +8,14 @@ To deploy and test the HyperGraphiQL interface:
 2. **Access the Interface**: Navigate to `/hypergraph` in your deployed application
 3. **Run Tests**: Tests run automatically in GitHub Actions, or run locally with:
    ```bash
-   # Option 1: Set token in environment (note: will be saved in shell history)
-   export GITHUB_TOKEN=your_token_here  # optional but recommended
-   deno test -A hypergraph_test.ts
-   
-   # Option 2: Pass inline (more secure for one-time use)
+   # Recommended: Pass token inline (more secure)
    GITHUB_TOKEN=your_token_here deno test -A hypergraph_test.ts
    
-   # Option 3: Without token (uses public API, 60 req/hr limit)
+   # Alternative: Set in environment (saved in shell history)
+   export GITHUB_TOKEN=your_token_here
+   deno test -A hypergraph_test.ts
+   
+   # Without token (uses public API, 60 req/hr limit)
    deno test -A hypergraph_test.ts
    ```
 
@@ -135,7 +135,7 @@ The HyperGraphiQL system includes comprehensive Deno tests that verify GitHub AP
 To run tests with authentication (recommended for full functionality):
 
 ```bash
-# Option 1: Pass token inline (recommended, doesn't save to history if space-prefixed)
+# Option 1: Pass token inline (recommended, more secure)
 GITHUB_TOKEN=your_github_token_here deno test -A hypergraph_test.ts
 
 # Option 2: Using environment variable (saved in shell history)
@@ -143,7 +143,9 @@ export GITHUB_TOKEN=your_github_token_here
 deno test -A hypergraph_test.ts
 
 # Option 3: Using .env file (create .env with GITHUB_TOKEN=...)
-# Then load it with: set -a; source .env; set +a
+# For bash/zsh: set -a; source .env; set +a
+# For fish: export (cat .env)
+# Or use direnv for automatic loading
 deno test -A hypergraph_test.ts
 
 # With specific permissions (recommended for production)
