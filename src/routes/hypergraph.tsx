@@ -3,24 +3,16 @@ import { Logo } from "../ui/logo";
 import { cn } from "@/utils/misc";
 import { buttonVariants } from "@/ui/button-util";
 import { ThemeSwitcherHome } from "@/ui/theme-switcher";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { fetchOrgRepositories } from "@/utils/github-api";
+import type { Repository } from "@/utils/github-api";
 
 export const Route = createFileRoute("/hypergraph")({
   component: Hypergraph,
 });
 
-interface Repository {
-  name: string;
-  url: string;
-  language: string;
-  stars: number;
-  forks: number;
-  visibility: string;
-  description?: string;
-}
-
-// Repository data extracted from the issue
-const repositories: Repository[] = [
+// Fallback repository data for when API is unavailable
+const fallbackRepositories: Repository[] = [
   { name: "cogflu", url: "https://github.com/cogpy/cogflu", language: "Java", stars: 0, forks: 0, visibility: "Public" },
   { name: ".github", url: "https://github.com/cogpy/.github", language: "", stars: 0, forks: 0, visibility: "Public", description: "Special profile readme repository" },
   { name: "mermaidcog", url: "https://github.com/cogpy/mermaidcog", language: "TypeScript", stars: 0, forks: 8200, visibility: "Public", description: "Generation of diagrams like flowcharts or sequence diagrams from text" },
@@ -127,6 +119,34 @@ const repositories: Repository[] = [
 ];
 
 function Hypergraph() {
+  const [repositories, setRepositories] = useState<Repository[]>(fallbackRepositories);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadRepositories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const repos = await fetchOrgRepositories("cogpy");
+        if (repos && repos.length > 0) {
+          setRepositories(repos);
+          console.log(`Loaded ${repos.length} repositories from GitHub API`);
+        } else {
+          console.warn("No repositories returned, using fallback data");
+        }
+      } catch (err) {
+        console.error("Failed to fetch repositories:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch repositories");
+        // Keep using fallback data
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRepositories();
+  }, []);
+
   return (
     <div className="relative flex h-full w-full flex-col bg-card">
       {/* Navigation */}
@@ -153,6 +173,21 @@ function Hypergraph() {
             <p className="text-muted-foreground">
               Interactive hypergraph visualization of the cogpy organization repositories
             </p>
+            {loading && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Loading repositories from GitHub...
+              </p>
+            )}
+            {error && (
+              <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                Warning: Using cached data. {error}
+              </p>
+            )}
+            {!loading && !error && (
+              <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                ✓ Loaded {repositories.length} repositories from GitHub API
+              </p>
+            )}
           </div>
 
           {/* Hypergraph Visualization */}
