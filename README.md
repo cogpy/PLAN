@@ -51,6 +51,19 @@ Features provided out of the box:
 > Stack](https://github.com/rphlmr/supa-stripe-stack), and some other amazing
 > Open Source resources. Check them out, please!
 
+## AGI-OS Kernel Stack Documentation
+
+This repository contains comprehensive documentation for the cogpy GitHub organization's AGI-OS initiative, mapping ~120 repositories into a unified neuromorphic operating system architecture.
+
+📚 **[View AGI-OS Documentation](./docs/agi-os/README.md)**
+
+### Quick Links
+- [Core Kernel Repositories](./docs/agi-os/01-core-kernel-repos.md) - Kernel foundation layer
+- [Cognitive Framework Layer](./docs/agi-os/02-cognitive-framework-layer.md) - OCC and agent runtime
+- [5-Repo Bridge Set](./docs/agi-os/05-bridge-set-integration.md) - Critical integration paths
+- [Visual Dependency Graph](./docs/agi-os/06-dependency-graph.md) - Complete system architecture
+- [Getting Started Guide](./docs/agi-os/09-getting-started.md) - Development setup
+
 ## Getting Started
 
 Check out the [Getting Started Documentation](https://github.com/get-convex/convex-saas/tree/main/docs) to get up
