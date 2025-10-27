@@ -68,3 +68,16 @@ This repository contains comprehensive documentation for the cogpy GitHub organi
 
 Check out the [Getting Started Documentation](https://github.com/get-convex/convex-saas/tree/main/docs) to get up
 and running.
+
+## AGI-OS Documentation
+
+This repository includes comprehensive documentation for evaluating AGI Operating System readiness through the integration of the OCC Framework (OpenCog Cognitive layer) with Echo.Kern (neuromorphic kernel).
+
+📚 **[View AGI-OS Documentation](docs/agi-os/README.md)**
+
+The documentation includes:
+- **OCC Framework Evaluation** - Assessment of 10 kernel primitives (38% coverage)
+- **Kernel Status Report** - Echo.Kern implementation status (25% completion)
+- **Kernel Function Manifest** - Complete API reference for 769+ functions
+- **Integration Map** - OCC ↔ Echo.Kern integration pathways
+- **Readiness Summary** - Composite assessment and roadmap (~55% combined coverage)
