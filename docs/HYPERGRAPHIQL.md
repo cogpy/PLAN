@@ -8,7 +8,14 @@ To deploy and test the HyperGraphiQL interface:
 2. **Access the Interface**: Navigate to `/hypergraph` in your deployed application
 3. **Run Tests**: Tests run automatically in GitHub Actions, or run locally with:
    ```bash
+   # Option 1: Set token in environment (note: will be saved in shell history)
    export GITHUB_TOKEN=your_token_here  # optional but recommended
+   deno test -A hypergraph_test.ts
+   
+   # Option 2: Pass inline (more secure for one-time use)
+   GITHUB_TOKEN=your_token_here deno test -A hypergraph_test.ts
+   
+   # Option 3: Without token (uses public API, 60 req/hr limit)
    deno test -A hypergraph_test.ts
    ```
 
@@ -87,9 +94,9 @@ Navigate to `/hypergraph` in the application to view the visualization.
 The HyperGraphiQL interface is deployed automatically with the main application:
 
 1. **Netlify Deployment** (Automatic):
-   - Configured in `netlify.toml`
-   - Deploys on push to main branch
-   - Build command: `npx convex deploy --cmd 'npm run build'`
+   - Configured in `netlify.toml` (see `[context.production]` section)
+   - Deploys automatically on push to main branch
+   - Production build command: `npx convex deploy --cmd 'npm run build'`
    - The `/hypergraph` route is accessible after deployment
 
 2. **Local Development**:
@@ -128,14 +135,19 @@ The HyperGraphiQL system includes comprehensive Deno tests that verify GitHub AP
 To run tests with authentication (recommended for full functionality):
 
 ```bash
-# Set your GitHub token
-export GITHUB_TOKEN=your_github_token_here
+# Option 1: Pass token inline (recommended, doesn't save to history if space-prefixed)
+GITHUB_TOKEN=your_github_token_here deno test -A hypergraph_test.ts
 
-# Run all tests with all permissions (quick for development)
+# Option 2: Using environment variable (saved in shell history)
+export GITHUB_TOKEN=your_github_token_here
+deno test -A hypergraph_test.ts
+
+# Option 3: Using .env file (create .env with GITHUB_TOKEN=...)
+# Then load it with: set -a; source .env; set +a
 deno test -A hypergraph_test.ts
 
 # With specific permissions (recommended for production)
-deno test --allow-net --allow-env hypergraph_test.ts
+GITHUB_TOKEN=your_token deno test --allow-net --allow-env hypergraph_test.ts
 ```
 
 To run tests without authentication (limited by rate limits):
