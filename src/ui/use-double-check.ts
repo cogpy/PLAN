@@ -15,7 +15,7 @@ export function useDoubleCheck() {
 
     const onClick: React.ButtonHTMLAttributes<HTMLButtonElement>["onClick"] =
       doubleCheck
-        ? undefined
+        ? props?.onClick
         : (e) => {
             e.preventDefault();
             setDoubleCheck(true);
@@ -32,7 +32,7 @@ export function useDoubleCheck() {
     return {
       ...props,
       onBlur: callAll(onBlur, props?.onBlur),
-      onClick: callAll(onClick, props?.onClick),
+      onClick,
       onKeyUp: callAll(onKeyUp, props?.onKeyUp),
     };
   }
