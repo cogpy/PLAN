@@ -3,6 +3,7 @@ import { Logo } from "../ui/logo";
 import { cn } from "@/utils/misc";
 import { buttonVariants } from "@/ui/button-util";
 import { ThemeSwitcherHome } from "@/ui/theme-switcher";
+import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/hypergraph")({
   component: Hypergraph,
@@ -165,6 +166,9 @@ function Hypergraph() {
 }
 
 function HypergraphVisualization({ repositories }: { repositories: Repository[] }) {
+  const [viewMode, setViewMode] = useState<"graph" | "list">("graph");
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  
   // Group repositories by language
   const languageGroups = repositories.reduce((acc: Record<string, Repository[]>, repo: Repository) => {
     const lang = repo.language || "Other";
@@ -176,10 +180,74 @@ function HypergraphVisualization({ repositories }: { repositories: Repository[] 
   }, {} as Record<string, Repository[]>);
 
   const languages = Object.keys(languageGroups).sort();
+  
+  // Filter repositories based on selected language
+  const filteredRepos = useMemo(() => {
+    if (!selectedLanguage) return repositories;
+    return repositories.filter(r => (r.language || "Other") === selectedLanguage);
+  }, [selectedLanguage, repositories]);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* View Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode("graph")}
+            className={cn(
+              "px-4 py-2 rounded-lg font-medium transition-colors",
+              viewMode === "graph"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            Graph View
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "px-4 py-2 rounded-lg font-medium transition-colors",
+              viewMode === "list"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            List View
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filter by language:</span>
+          <select
+            value={selectedLanguage || ""}
+            onChange={(e) => setSelectedLanguage(e.target.value || null)}
+            className="px-3 py-1.5 rounded-lg border bg-background text-sm"
+          >
+            <option value="">All Languages</option>
+            {languages.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang} ({languageGroups[lang].length})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      {viewMode === "graph" ? (
+        <GraphView repositories={filteredRepos} languageGroups={languageGroups} />
+      ) : (
+        <ListView repositories={filteredRepos} />
+      )}
+    </div>
+  );
+}
+
+function GraphView({ repositories, languageGroups }: { repositories: Repository[], languageGroups: Record<string, Repository[]> }) {
+  const languages = Object.keys(languageGroups).sort();
+  
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* Language Statistics */}
         {languages.map((lang) => (
           <div
@@ -211,51 +279,220 @@ function HypergraphVisualization({ repositories }: { repositories: Repository[] 
           </div>
         ))}
       </div>
+      
+      {/* SVG Network Graph */}
+      <div className="bg-muted/30 rounded-lg border p-4">
+        <h3 className="text-lg font-semibold mb-4">Organization Network</h3>
+        <NetworkGraph repositories={repositories} />
+      </div>
+    </div>
+  );
+}
 
-      {/* Repository List */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">All Repositories</h2>
-        <div className="grid gap-2">
-          {repositories.map((repo) => (
-            <div
-              key={repo.name}
-              className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <a
-                    href={repo.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {repo.name}
-                  </a>
-                  {repo.description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {repo.description}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
-                  {repo.language && (
-                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
-                      {repo.language}
-                    </span>
-                  )}
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-full text-xs",
-                    repo.visibility === "Public" && "bg-green-500/10 text-green-600",
-                    repo.visibility === "Private" && "bg-red-500/10 text-red-600",
-                    repo.visibility === "Internal" && "bg-yellow-500/10 text-yellow-600"
-                  )}>
-                    {repo.visibility}
+function NetworkGraph({ repositories }: { repositories: Repository[] }) {
+  const width = 1200;
+  const height = 600;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Group by language for positioning
+  const languageGroups = repositories.reduce((acc: Record<string, Repository[]>, repo: Repository) => {
+    const lang = repo.language || "Other";
+    if (!acc[lang]) {
+      acc[lang] = [];
+    }
+    acc[lang].push(repo);
+    return acc;
+  }, {} as Record<string, Repository[]>);
+  
+  const languages = Object.keys(languageGroups);
+  const langCount = languages.length;
+  
+  // Position nodes in clusters by language
+  const nodes: { x: number; y: number; repo: Repository; language: string }[] = [];
+  
+  languages.forEach((lang, langIndex) => {
+    const angle = (langIndex / langCount) * 2 * Math.PI;
+    const clusterX = centerX + Math.cos(angle) * 250;
+    const clusterY = centerY + Math.sin(angle) * 200;
+    
+    languageGroups[lang].forEach((repo, repoIndex) => {
+      const count = languageGroups[lang].length;
+      const spread = Math.min(count * 15, 150);
+      const offset = ((repoIndex - count / 2) / count) * spread;
+      
+      nodes.push({
+        x: clusterX + offset * Math.cos(angle + Math.PI / 2),
+        y: clusterY + offset * Math.sin(angle + Math.PI / 2),
+        repo,
+        language: lang,
+      });
+    });
+  });
+  
+  // Language colors
+  const languageColors: Record<string, string> = {
+    "Python": "#3572A5",
+    "TypeScript": "#3178c6",
+    "JavaScript": "#f1e05a",
+    "C++": "#f34b7d",
+    "C": "#555555",
+    "Rust": "#dea584",
+    "Go": "#00ADD8",
+    "Java": "#b07219",
+    "PHP": "#4F5D95",
+    "HTML": "#e34c26",
+    "C#": "#178600",
+    "Scala": "#c22d40",
+    "Shell": "#89e051",
+    "Cypher": "#34c0eb",
+    "Scheme": "#1e4aec",
+    "CSS": "#563d7c",
+    "Jupyter Notebook": "#DA5B0B",
+    "Other": "#cccccc",
+  };
+  
+  return (
+    <div className="overflow-auto">
+      <svg width={width} height={height} className="border rounded bg-card/50">
+        {/* Draw edges from center to language clusters */}
+        {languages.map((lang, langIndex) => {
+          const angle = (langIndex / langCount) * 2 * Math.PI;
+          const clusterX = centerX + Math.cos(angle) * 250;
+          const clusterY = centerY + Math.sin(angle) * 200;
+          
+          return (
+            <line
+              key={`edge-${lang}`}
+              x1={centerX}
+              y1={centerY}
+              x2={clusterX}
+              y2={clusterY}
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeOpacity="0.2"
+              className="text-muted-foreground"
+            />
+          );
+        })}
+        
+        {/* Draw nodes */}
+        {nodes.map((node, index) => (
+          <g key={`node-${index}`}>
+            <a href={node.repo.url} target="_blank" rel="noopener noreferrer">
+              <circle
+                cx={node.x}
+                cy={node.y}
+                r={Math.max(5, Math.min(node.repo.forks / 500, 15))}
+                fill={languageColors[node.language] || languageColors["Other"]}
+                opacity="0.8"
+                className="hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <title>{node.repo.name} ({node.language})</title>
+              </circle>
+            </a>
+          </g>
+        ))}
+        
+        {/* Center node */}
+        <circle
+          cx={centerX}
+          cy={centerY}
+          r="20"
+          fill="currentColor"
+          className="text-primary"
+          opacity="0.8"
+        />
+        <text
+          x={centerX}
+          y={centerY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="text-xs font-bold fill-primary-foreground"
+        >
+          cogpy
+        </text>
+        
+        {/* Language labels */}
+        {languages.map((lang, langIndex) => {
+          const angle = (langIndex / langCount) * 2 * Math.PI;
+          const labelX = centerX + Math.cos(angle) * 320;
+          const labelY = centerY + Math.sin(angle) * 250;
+          
+          return (
+            <g key={`label-${lang}`}>
+              <rect
+                x={labelX - 40}
+                y={labelY - 12}
+                width="80"
+                height="24"
+                rx="4"
+                fill={languageColors[lang] || languageColors["Other"]}
+                opacity="0.9"
+              />
+              <text
+                x={labelX}
+                y={labelY}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-xs font-semibold fill-white"
+              >
+                {lang}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function ListView({ repositories }: { repositories: Repository[] }) {
+  return (
+    <div className="mt-8">
+      <h2 className="text-2xl font-semibold mb-4">
+        All Repositories ({repositories.length})
+      </h2>
+      <div className="grid gap-2">
+        {repositories.map((repo) => (
+          <div
+            key={repo.name}
+            className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <a
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary hover:underline"
+                >
+                  {repo.name}
+                </a>
+                {repo.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {repo.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
+                {repo.language && (
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                    {repo.language}
                   </span>
-                </div>
+                )}
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-xs",
+                  repo.visibility === "Public" && "bg-green-500/10 text-green-600",
+                  repo.visibility === "Private" && "bg-red-500/10 text-red-600",
+                  repo.visibility === "Internal" && "bg-yellow-500/10 text-yellow-600"
+                )}>
+                  {repo.visibility}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );

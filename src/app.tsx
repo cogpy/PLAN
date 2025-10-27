@@ -7,8 +7,9 @@ import { router } from "@/router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import "@/i18n";
 
-// Convex client
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+// Convex client - use dummy URL if not provided
+const convexUrl = import.meta.env.VITE_CONVEX_URL as string || "https://dummy-url.convex.cloud";
+const convex = new ConvexReactClient(convexUrl);
 
 const convexQueryClient = new ConvexQueryClient(convex);
 const queryClient = new QueryClient({
