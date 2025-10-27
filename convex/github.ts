@@ -1,0 +1,99 @@
+import { action } from "./_generated/server";
+import { v } from "convex/values";
+
+/**
+ * GitHub API client for fetching organization repositories
+ */
+
+export interface Repository {
+  name: string;
+  url: string;
+  language: string;
+  stars: number;
+  forks: number;
+  visibility: string;
+  description?: string;
+}
+
+/**
+ * Fetch all repositories from a GitHub organization
+ * This action handles pagination to retrieve all repositories
+ */
+export const getOrgRepositories = action({
+  args: {
+    org: v.string(),
+  },
+  handler: async (_, { org }): Promise<Repository[]> => {
+    const githubToken = process.env.GITHUB_TOKEN;
+    
+    if (!githubToken) {
+      console.warn("GITHUB_TOKEN not set, using public API with rate limits");
+    }
+
+    const headers: HeadersInit = {
+      "Accept": "application/vnd.github.v3+json",
+      "User-Agent": "PLAN-HyperGraphiQL",
+    };
+
+    if (githubToken) {
+      headers["Authorization"] = `token ${githubToken}`;
+    }
+
+    const repositories: Repository[] = [];
+    let page = 1;
+    const perPage = 100; // GitHub API max per page
+    let hasMore = true;
+
+    try {
+      while (hasMore) {
+        const url = `https://api.github.com/orgs/${org}/repos?page=${page}&per_page=${perPage}&type=all`;
+        
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(
+            `GitHub API error (${response.status}): ${error}`
+          );
+        }
+
+        const repos = await response.json();
+
+        if (!Array.isArray(repos)) {
+          throw new Error("Unexpected response format from GitHub API");
+        }
+
+        // Map GitHub API response to our Repository interface
+        for (const repo of repos) {
+          repositories.push({
+            name: repo.name || "",
+            url: repo.html_url || "",
+            language: repo.language || "",
+            stars: repo.stargazers_count || 0,
+            forks: repo.forks_count || 0,
+            visibility: repo.visibility
+              ? repo.visibility.charAt(0).toUpperCase() + repo.visibility.slice(1)
+              : "Public",
+            description: repo.description || undefined,
+          });
+        }
+
+        // Check if there are more pages
+        hasMore = repos.length === perPage;
+        page++;
+
+        // Safety check to prevent infinite loops
+        if (page > 20) {
+          console.warn("Reached maximum page limit (20 pages, 2000 repos)");
+          break;
+        }
+      }
+
+      console.log(`Fetched ${repositories.length} repositories from ${org}`);
+      return repositories;
+    } catch (error) {
+      console.error("Error fetching GitHub repositories:", error);
+      throw error;
+    }
+  },
+});
