@@ -27,6 +27,15 @@ function Index() {
         </Link>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-6">
+            <Link
+              to="/hypergraph"
+              className={cn(
+                buttonVariants({ variant: "link", size: "sm" }),
+                "group flex gap-3 px-0 text-primary/80 hover:text-primary hover:no-underline",
+              )}
+            >
+              Hypergraph
+            </Link>
             <a
               href="https://github.com/get-convex/convex-saas/tree/main/docs"
               target="_blank"
