@@ -38,5 +38,10 @@ jobs:
       - name: Run linter
         run: deno lint
 
+      # Run HyperGraphiQL tests with GitHub API access
+      # The GITHUB_TOKEN allows tests to fetch cogpy organization repositories
+      # and provides higher rate limits (5000 req/hr vs 60 req/hr)
       - name: Run tests
         run: deno test -A
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
